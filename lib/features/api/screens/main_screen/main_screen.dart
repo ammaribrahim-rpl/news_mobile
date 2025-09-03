@@ -12,6 +12,50 @@ class ApiScreen extends StatefulWidget {
 
 class _ApiScreenState extends State<ApiScreen> {
   String _selectedCategory = '';
+  final TextEditingController _searchController = TextEditingController();
+  List<Map<String, dynamic>> _allNews = [];
+  List<Map<String, dynamic>> _filteredNews = [];
+  bool isLoading = false;
+
+  Future<void> fetchNews(String type) async {
+    setState(() {
+      isLoading = true;
+    });
+
+    final data = await Api().getApi(category: type);
+    setState(() {
+      _allNews = data;
+      _filteredNews = data;
+      isLoading = false;
+    });
+  }
+
+  _applySearch(String query) {
+    if (query.isEmpty) {
+      setState(() {
+        _filteredNews = _allNews;
+      });
+    } else {
+      setState(() {
+        _filteredNews = _allNews.where((item) {
+          final title = item['title'].toString().toLowerCase();
+          final snippet = item['contentSnippet'].toString().toLowerCase();
+          final search = query.toLowerCase();
+          return title.contains(search) || snippet.contains(search);
+        }).toList();
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    fetchNews(_selectedCategory);
+
+    _searchController.addListener(() {
+      _applySearch(_searchController.text);
+    });
+  }
 
   Widget categoryButton(String label, String type) {
     return ElevatedButton(
@@ -24,6 +68,7 @@ class _ApiScreenState extends State<ApiScreen> {
         setState(() {
           _selectedCategory = type;
         });
+        fetchNews(type);
       },
       child: Text(label, style: TextStyle(color: Colors.white)),
     );
@@ -32,12 +77,6 @@ class _ApiScreenState extends State<ApiScreen> {
   String formatDate(String date) {
     DateTime dateTime = DateTime.parse(date);
     return DateFormat('dd MMMM yyyy, HH:mm').format(dateTime);
-  }
-
-  void _retryFetch() {
-    setState(() {
-      // Memicu ulang FutureBuilder dengan mengubah state
-    });
   }
 
   @override
@@ -59,6 +98,23 @@ class _ApiScreenState extends State<ApiScreen> {
       ),
       body: Column(
         children: [
+          TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Search News',
+              prefixIcon: const Icon(Icons.search),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide.none,
+              ),
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 0,
+              ),
+            ),
+          ),
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -84,220 +140,117 @@ class _ApiScreenState extends State<ApiScreen> {
           ),
 
           Expanded(
-            child: FutureBuilder(
-              future: Api().getApi(type: _selectedCategory),
-              builder: (context, snapshot) {
-                // Loading state
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      color: Colors.deepOrange,
-                      strokeWidth: 3,
-                    ),
-                  );
-                }
-
-                // State: Error
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.error_outline,
-                          size: 80,
-                          color: Colors.redAccent,
-                        ),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Oops! Gagal memuat berita.',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          snapshot.error.toString(),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: Colors.grey[700]),
-                        ),
-                        const SizedBox(height: 20),
-                        ElevatedButton.icon(
-                          onPressed: _retryFetch,
-                          icon: const Icon(Icons.refresh),
-                          label: const Text('Coba Lagi'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.deepOrange,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 12,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                // State: Empty Data
-                if (!snapshot.hasData ||
-                    snapshot.data == null ||
-                    snapshot.data!.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.inbox, size: 80, color: Colors.grey),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Tidak ada berita saat ini',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Silakan coba muat ulang halaman.',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                        const SizedBox(height: 20),
-                        ElevatedButton.icon(
-                          onPressed: _retryFetch,
-                          icon: const Icon(Icons.refresh),
-                          label: const Text('Muat Ulang'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.deepOrange,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 12,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-
-                final data = snapshot.data!;
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: data.length,
-                  itemBuilder: (context, index) {
-                    final item = data[index];
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: InkWell(
-                        onTap: () {
-                          // Navigasi ke detail berita
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  DetailScreen(newsDetail: item),
-                            ),
-                          );
-                        },
-                        borderRadius: BorderRadius.circular(14),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Gambar berita (full width)
-                            ClipRRect(
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(14),
-                                topRight: Radius.circular(14),
-                              ),
-                              child: Image.network(
-                                item['image']['large'],
-                                width: double.infinity,
-                                height: 200,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    width: double.infinity,
-                                    height: 200,
-                                    color: Colors.grey[300],
-                                    child: const Icon(
-                                      Icons.broken_image,
-                                      color: Colors.grey,
-                                      size: 40,
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-
-                            // Konten berita
-                            Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Judul berita
-                                  Text(
-                                    item['title'],
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.black87,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  // Tanggal berita
-                                  Text(
-                                    formatDate(item['isoDate']),
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  const SizedBox(height: 10),
-                                  // Deskripsi berita
-                                  Text(
-                                    item['contentSnippet'],
-                                    maxLines: 3,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      color: Colors.grey[800],
-                                      height: 1.4,
-                                    ),
-                                  ),
-                                ],
-                              ),
+            child: isLoading
+                ? Center(child: CircularProgressIndicator())
+                : _filteredNews.isEmpty
+                ? Center(child: Text('No news found'))
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _filteredNews.length,
+                    itemBuilder: (context, index) {
+                      final item = _filteredNews[index];
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
                             ),
                           ],
                         ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
+                        child: InkWell(
+                          onTap: () {
+                            // Navigasi ke detail berita
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    DetailScreen(newsDetail: item),
+                              ),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Gambar berita (full width)
+                              ClipRRect(
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(14),
+                                  topRight: Radius.circular(14),
+                                ),
+                                child: Image.network(
+                                  item['image']['large'],
+                                  width: double.infinity,
+                                  height: 200,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      width: double.infinity,
+                                      height: 200,
+                                      color: Colors.grey[300],
+                                      child: const Icon(
+                                        Icons.broken_image,
+                                        color: Colors.grey,
+                                        size: 40,
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+
+                              // Konten berita
+                              Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Judul berita
+                                    Text(
+                                      item['title'],
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    // Tanggal berita
+                                    Text(
+                                      formatDate(item['isoDate']),
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    const SizedBox(height: 10),
+                                    // Deskripsi berita
+                                    Text(
+                                      item['contentSnippet'],
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        color: Colors.grey[800],
+                                        height: 1.4,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
           ),
         ],
       ),
