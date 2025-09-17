@@ -1,23 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:news_mobile/features/api/screens/main_screen/main_screen.dart';
+import 'package:get/get.dart';
+import 'package:news_mobile/lib.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(NewsApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+// ignore: must_be_immutable
+class NewsApp extends StatelessWidget {
+var c = Get.put(NewsController());
+  NewsApp({super.key});
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const ApiScreen(),
+    return Obx(
+      () => GetMaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData.light(),
+        darkTheme: ThemeData.dark(),
+        themeMode: c.isTheme.value ? ThemeMode.dark : ThemeMode.light,
+      home: ApiScreen(),
+    ),
     );
   }
 }

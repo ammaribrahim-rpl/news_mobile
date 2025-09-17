@@ -1,0 +1,1 @@
+export 'screens/news_controller.dart';

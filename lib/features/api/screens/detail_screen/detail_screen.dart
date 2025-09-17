@@ -1,157 +1,197 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart'; // Pastikan package ini sudah diinstal
+import 'package:news_mobile/lib.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class DetailScreen extends StatelessWidget {
   final Map<String, dynamic> newsDetail;
-  const DetailScreen({super.key, required this.newsDetail});
+  DetailScreen({super.key, required this.newsDetail});
 
-  // Fungsi untuk memformat tanggal
+  final NewsController c = Get.find<NewsController>();
+
+  // Format tanggal
   String _formatDate(String? date) {
     if (date == null || date.isEmpty) return 'Tanggal tidak tersedia';
     try {
       DateTime dateTime = DateTime.parse(date);
       return DateFormat('dd MMMM yyyy, HH:mm').format(dateTime);
-    } catch (e) {
-      return date; // Mengembalikan string asli jika parsing gagal
+    } catch (_) {
+      return date;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final imageUrl =
-        newsDetail['image'] != null && newsDetail['image']['large'] != null
+    final imageUrl = newsDetail['image'] != null &&
+            newsDetail['image']['large'] != null
         ? newsDetail['image']['large']
-        : 'https://via.placeholder.com/400x250?text=No+Image'; // Placeholder yang lebih kecil
+        : 'https://via.placeholder.com/400x250?text=No+Image';
 
-    return Scaffold(
-      backgroundColor:
-          Colors.grey[100], // Konsisten dengan background awal Anda
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87, // Warna ikon back
-        centerTitle: true,
-        title: const Text(
-          'Detail Berita',
-          style: TextStyle(
-            color: Colors.black87,
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
+    return Obx(
+      () => Scaffold(
+        backgroundColor: c.isTheme.value
+            ? MainColors.blackColor[800]
+            : MainColors.whiteColor,
+        appBar: AppBar(
+          elevation: 0,
+          backgroundColor: c.isTheme.value
+              ? MainColors.blackColor[800]
+              : MainColors.whiteColor,
+          foregroundColor: c.isTheme.value
+              ? MainColors.whiteColor
+              : MainColors.blackColor[800],
+          centerTitle: true,
+          title: Text(
+            'Detail Berita',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: c.isTheme.value
+                  ? MainColors.whiteColor
+                  : MainColors.blackColor[800],
+            ),
           ),
+          actions: [
+            IconButton(
+              icon: Icon(
+                c.isTheme.value ? Icons.dark_mode : Icons.light_mode,
+                color: c.isTheme.value
+                    ? MainColors.whiteColor
+                    : MainColors.blackColor[800],
+              ),
+              onPressed: () => c.changeTheme(),
+            ),
+          ],
         ),
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                newsDetail['title'] ?? 'Judul Tidak Tersedia',
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                _formatDate(newsDetail['isoDate']),
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-              ),
-              const SizedBox(height: 16),
-              // Hero Animation untuk gambar
-              Hero(
-                tag:
-                    'newsImage-${newsDetail['title']}', // TAG HARUS SAMA DENGAN DI MAIN_SCREEN
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(
-                    10,
-                  ), // Sedikit sudut bulat
-                  child: Image.network(
-                    imageUrl,
-                    width: double.infinity,
-                    height: 200, // Tinggi gambar 200px agar tidak terlalu besar
-                    fit: BoxFit.cover,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return Container(
-                        width: double.infinity,
-                        height: 200,
-                        color: Colors.grey[200],
-                        alignment: Alignment.center,
-                        child: CircularProgressIndicator(
-                          value: loadingProgress.expectedTotalBytes != null
-                              ? loadingProgress.cumulativeBytesLoaded /
-                                    loadingProgress.expectedTotalBytes!
-                              : null,
-                          color: Colors.blueAccent,
-                        ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return Container(
-                        width: double.infinity,
-                        height: 200,
-                        color: Colors.grey[300],
-                        child: const Icon(
-                          Icons.broken_image,
-                          color: Colors.grey,
-                          size: 40,
-                        ),
-                      );
-                    },
+        body: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Judul
+                Text(
+                  newsDetail['title'] ?? 'Judul Tidak Tersedia',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: c.isTheme.value
+                        ? MainColors.whiteColor
+                        : MainColors.blackColor[800],
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                newsDetail['contentSnippet'] ?? 'Deskripsi tidak tersedia.',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey[800],
-                  height: 1.5,
+                const SizedBox(height: 10),
+
+                // Tanggal
+                Text(
+                  _formatDate(newsDetail['isoDate']),
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: c.isTheme.value
+                        ? MainColors.greyColor[400]
+                        : MainColors.greyColor[600],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              if (newsDetail['link'] != null)
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: ElevatedButton.icon(
-                    onPressed: () async {
-                      final Uri url = Uri.parse(newsDetail['link']);
-                      if (await canLaunchUrl(url)) {
-                        await launchUrl(url);
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Tidak dapat membuka link: ${newsDetail['link']}',
-                            ),
+                const SizedBox(height: 16),
+
+                // Gambar dengan Hero
+                Hero(
+                  tag: 'newsImage-${newsDetail['title']}',
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      imageUrl,
+                      width: double.infinity,
+                      height: 220,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          width: double.infinity,
+                          height: 220,
+                          color: c.isTheme.value
+                              ? MainColors.blackColor[600]
+                              : MainColors.greyColor[200],
+                          alignment: Alignment.center,
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                                : null,
+                            color: MainColors.primaryColor,
                           ),
                         );
-                      }
-                    },
-                    icon: const Icon(Icons.link, color: Colors.white),
-                    label: const Text(
-                      'Baca Selengkapnya',
-                      style: TextStyle(color: Colors.white, fontSize: 16),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          Colors.blueAccent, // Warna tombol konsisten
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 15,
-                        vertical: 10,
-                      ),
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: double.infinity,
+                          height: 220,
+                          color: c.isTheme.value
+                              ? MainColors.blackColor[600]
+                              : MainColors.greyColor[200],
+                          child: Icon(
+                            Icons.broken_image,
+                            color: MainColors.greyColor,
+                            size: 40,
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ),
-            ],
+                const SizedBox(height: 16),
+
+                // Isi berita
+                Text(
+                  newsDetail['contentSnippet'] ?? 'Deskripsi tidak tersedia.',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: c.isTheme.value
+                        ? MainColors.whiteColor
+                        : MainColors.blackColor[800],
+                    height: 1.6,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Tombol baca selengkapnya
+                if (newsDetail['link'] != null)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        final Uri url = Uri.parse(newsDetail['link']);
+                        if (await canLaunchUrl(url)) {
+                          await launchUrl(url,
+                              mode: LaunchMode.externalApplication);
+                        } else {
+                          Get.snackbar(
+                            "Error",
+                            "Tidak dapat membuka link",
+                            snackPosition: SnackPosition.BOTTOM,
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.link, color: Colors.white),
+                      label: const Text(
+                        'Baca Selengkapnya',
+                        style: TextStyle(fontSize: 16, color: Colors.white),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: MainColors.primaryColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
