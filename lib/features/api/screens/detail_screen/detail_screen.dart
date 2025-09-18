@@ -4,11 +4,11 @@ import 'package:intl/intl.dart';
 import 'package:news_mobile/lib.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class DetailScreen extends StatelessWidget {
-  final Map<String, dynamic> newsDetail;
-  DetailScreen({super.key, required this.newsDetail});
-
+class NewsDetail extends StatelessWidget {
+  final Map<String, dynamic> news;
   final NewsController c = Get.find<NewsController>();
+
+  NewsDetail({super.key, required this.news});
 
   // Format tanggal
   String _formatDate(String? date) {
@@ -23,9 +23,9 @@ class DetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imageUrl = newsDetail['image'] != null &&
-            newsDetail['image']['large'] != null
-        ? newsDetail['image']['large']
+    final imageUrl = news['image'] != null &&
+            news['image']['large'] != null
+        ? news['image']['large']
         : 'https://via.placeholder.com/400x250?text=No+Image';
 
     return Obx(
@@ -72,7 +72,7 @@ class DetailScreen extends StatelessWidget {
               children: [
                 // Judul
                 Text(
-                  newsDetail['title'] ?? 'Judul Tidak Tersedia',
+                  news['title'] ?? 'Judul Tidak Tersedia',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -85,7 +85,7 @@ class DetailScreen extends StatelessWidget {
 
                 // Tanggal
                 Text(
-                  _formatDate(newsDetail['isoDate']),
+                  _formatDate(news['isoDate']),
                   style: TextStyle(
                     fontSize: 14,
                     color: c.isTheme.value
@@ -97,7 +97,7 @@ class DetailScreen extends StatelessWidget {
 
                 // Gambar dengan Hero
                 Hero(
-                  tag: 'newsImage-${newsDetail['title']}',
+                  tag: 'newsImage-${news['title']}',
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Image.network(
@@ -144,7 +144,7 @@ class DetailScreen extends StatelessWidget {
 
                 // Isi berita
                 Text(
-                  newsDetail['contentSnippet'] ?? 'Deskripsi tidak tersedia.',
+                  news['contentSnippet'] ?? 'Deskripsi tidak tersedia.',
                   style: TextStyle(
                     fontSize: 16,
                     color: c.isTheme.value
@@ -156,12 +156,12 @@ class DetailScreen extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 // Tombol baca selengkapnya
-                if (newsDetail['link'] != null)
+                if (news['link'] != null)
                   Align(
                     alignment: Alignment.centerRight,
                     child: ElevatedButton.icon(
                       onPressed: () async {
-                        final Uri url = Uri.parse(newsDetail['link']);
+                        final Uri url = Uri.parse(news['link']);
                         if (await canLaunchUrl(url)) {
                           await launchUrl(url,
                               mode: LaunchMode.externalApplication);

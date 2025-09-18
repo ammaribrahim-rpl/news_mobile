@@ -9,7 +9,6 @@ class NewsController extends GetxController {
   var search = ''.obs;
   var isTheme = true.obs;
   var bookMarks = <Map<String, dynamic>>[].obs;
-
   var selectedCategory = ''.obs;
   var allNews = <Map<String, dynamic>>[].obs;
   var filteredNews = <Map<String, dynamic>>[].obs;
@@ -59,5 +58,19 @@ class NewsController extends GetxController {
     } else {
       Get.changeTheme(ThemeData.light());
     }
+  }
+
+  void addBookmark(Map<String, dynamic> news) {
+    if (!bookMarks.contains(news)) {
+      bookMarks.add(news);
+    }
+  }
+
+  void removeBookmark(Map<String, dynamic> news) {
+    bookMarks.remove(news);
+  }
+
+  bool isBookmarked(Map<String, dynamic> news) {
+    return bookMarks.contains(news);
   }
 }
