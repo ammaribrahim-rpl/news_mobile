@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:news_mobile/lib.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+part 'sections/hero_section.dart';
+
 class NewsDetail extends StatelessWidget {
   final Map<String, dynamic> news;
   final NewsController c = Get.find<NewsController>();
@@ -23,8 +25,7 @@ class NewsDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imageUrl = news['image'] != null &&
-            news['image']['large'] != null
+    final imageUrl = news['image'] != null && news['image']['large'] != null
         ? news['image']['large']
         : 'https://via.placeholder.com/400x250?text=No+Image';
 
@@ -96,50 +97,7 @@ class NewsDetail extends StatelessWidget {
                 const SizedBox(height: 16),
 
                 // Gambar dengan Hero
-                Hero(
-                  tag: 'newsImage-${news['title']}',
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      imageUrl,
-                      width: double.infinity,
-                      height: 220,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          width: double.infinity,
-                          height: 220,
-                          color: c.isTheme.value
-                              ? MainColors.blackColor[600]
-                              : MainColors.greyColor[200],
-                          alignment: Alignment.center,
-                          child: CircularProgressIndicator(
-                            value: loadingProgress.expectedTotalBytes != null
-                                ? loadingProgress.cumulativeBytesLoaded /
-                                    loadingProgress.expectedTotalBytes!
-                                : null,
-                            color: MainColors.primaryColor,
-                          ),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          width: double.infinity,
-                          height: 220,
-                          color: c.isTheme.value
-                              ? MainColors.blackColor[600]
-                              : MainColors.greyColor[200],
-                          child: Icon(
-                            Icons.broken_image,
-                            color: MainColors.greyColor,
-                            size: 40,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
+                heroSection(news: news, imageUrl: imageUrl, c: c),
                 const SizedBox(height: 16),
 
                 // Isi berita
@@ -163,8 +121,10 @@ class NewsDetail extends StatelessWidget {
                       onPressed: () async {
                         final Uri url = Uri.parse(news['link']);
                         if (await canLaunchUrl(url)) {
-                          await launchUrl(url,
-                              mode: LaunchMode.externalApplication);
+                          await launchUrl(
+                            url,
+                            mode: LaunchMode.externalApplication,
+                          );
                         } else {
                           Get.snackbar(
                             "Error",
