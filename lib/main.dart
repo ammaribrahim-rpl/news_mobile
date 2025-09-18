@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:news_mobile/lib.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(NewsApp());
 }
 
@@ -20,7 +21,7 @@ var c = Get.put(NewsController());
         theme: ThemeData.light(),
         darkTheme: ThemeData.dark(),
         themeMode: c.isTheme.value ? ThemeMode.dark : ThemeMode.light,
-      home: ApiScreen(),
+      home: SplashScreen(),
     ),
     );
   }
