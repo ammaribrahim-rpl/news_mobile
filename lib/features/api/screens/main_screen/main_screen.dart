@@ -37,7 +37,9 @@ class ApiScreen extends StatelessWidget {
                     : MainColors.greyColor[800]),
           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
         ),
-        backgroundColor: const Color.fromARGB(0, 59, 47, 47),
+        backgroundColor: c.isTheme.value
+            ? MainColors.blackColor[600]
+            : MainColors.greyColor[200],
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
